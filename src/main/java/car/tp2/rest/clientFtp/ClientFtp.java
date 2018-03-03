@@ -5,8 +5,9 @@ package car.tp2.rest.clientFtp;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
+import javax.print.DocFlavor;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,6 +40,10 @@ public class ClientFtp {
 
     /**
      *
+     */
+    private FtpUtils ftpUtils;
+    /**
+     *
      * @param host
      * @param port
      * @param username
@@ -50,6 +55,7 @@ public class ClientFtp {
         this.username = username;
         this.password = password;
         this.client = new FTPClient();
+        this.ftpUtils = new FtpUtils();
     }
 
     /**
@@ -60,6 +66,7 @@ public class ClientFtp {
     public boolean authenticate() throws IOException {
         this.client.connect(host, port);
         this.client.enterLocalPassiveMode();
+        this.client.enterRemotePassiveMode();
         this.client.login(username, password);
         return this.client.isConnected();
     }
@@ -97,15 +104,15 @@ public class ClientFtp {
         String fileToDelete = currentPath+"/"+name;
 
         //check if it is file and delete it
-        if (chckIsFile(this.client , fileToDelete)) {
+        if (this.ftpUtils.chckIsFile(this.client , fileToDelete)) {
             System.out.println("FILE");
-            return this.deleteFile(this.client,fileToDelete);
+            return this.ftpUtils.deleteFile(this.client,fileToDelete);
         }
 
         //check if it is durectory and delete it
-        if (checkIsDirectory(this.client,fileToDelete)) {
+        if (this.ftpUtils.checkIsDirectory(this.client,fileToDelete)) {
             System.out.println("DIR\n"+fileToDelete);
-            return this.deleteDirectory(this.client,fileToDelete);
+            return this.ftpUtils.deleteDirectory(this.client,fileToDelete);
         }
 
         return false;
@@ -138,88 +145,24 @@ public class ClientFtp {
         }
     }
 
+
     /**
-     * delete file
-     * @param client
+     *
      * @param path
      * @return
      * @throws IOException
      */
-    private boolean deleteFile(FTPClient client ,final String path) throws IOException {
-        if(client.deleteFile(path)){
-            Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,client.getReplyString());
-            return true;
+    public boolean stor(final String path) throws IOException {
+        File localDir = new File(path);
+        String remoteFilePath = this.client.printWorkingDirectory();
+        if(localDir.isDirectory()) {
+            boolean create = this.client.makeDirectory(localDir.getName());
+            this.client.changeWorkingDirectory(this.client.printWorkingDirectory()+"/"+localDir.getName());
+            remoteFilePath = this.client.printWorkingDirectory();
+            return this.ftpUtils.uploadDirectory(this.client, remoteFilePath, localDir.getPath(), "");
         }
-        Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,client.getReplyString());
-        return false;
-    }
+        else
+            return this.ftpUtils.uploadSingleFile(this.client,localDir.getPath(),remoteFilePath+"/"+localDir.getName());
 
-    /**
-     * delete recurcive directory
-     * @param client
-     * @param path
-     * @return
-     * @throws IOException
-     */
-    private boolean deleteDirectory(FTPClient client ,final String path) throws IOException {
-
-        FTPFile [] files = client.listFiles(path);
-        System.out.println("DIR length : "+files.length);
-        for(FTPFile file: files){
-            if (file.isDirectory()){
-                System.out.println("DIR to delete : "+path+"/"+file.getName());
-                //client.removeDirectory(path+"/"+file.getName());
-                deleteDirectory(client , path+"/"+file.getName());
-            }
-
-            if (file.isFile()){
-                System.out.println("File to delete : "+path+"/"+file.getName());
-                client.deleteFile(path+"/"+file.getName());
-
-            }
-
-        }
-
-        if(this.client.removeDirectory(path)){
-            Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,this.client.getReplyString());
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * check if the path is directory
-     * @param client
-     * @param path
-     * @return boolean
-     * @throws IOException
-     */
-    private boolean checkIsDirectory(FTPClient client , String path) throws IOException {
-        String currentPath = client.printWorkingDirectory();
-        this.client.changeWorkingDirectory(path);
-        final int returnCode = this.client.getReplyCode();
-        if (returnCode != 550) {
-            this.client.changeWorkingDirectory(currentPath);
-            Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,"File "+path+" is directory");
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * check if the path is File
-     * @param client
-     * @param path
-     * @return
-     * @throws IOException
-     */
-    private boolean chckIsFile(FTPClient client , String path) throws IOException {
-        InputStream inputStream = client.retrieveFileStream(path);
-        int returnCode = this.client.getReplyCode();
-        if (inputStream != null && returnCode != 550) {
-            Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,"File "+path+" is not directory");
-            return true;
-        }
-        return false;
     }
 }

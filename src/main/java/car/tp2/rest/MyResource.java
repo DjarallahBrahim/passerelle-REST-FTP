@@ -211,6 +211,48 @@ public class MyResource {
 
         Response.ResponseBuilder response = Response.ok("Result: "+result, MediaType.TEXT_HTML).status(Response.Status.OK);
         return response.build();
+    }
+
+    @PUT
+    @Path("stor/{param:.*}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response stor(@PathParam("param") String pathFile) throws IOException {
+        System.out.println("4");
+        if (headers.getRequestHeader("authorization") == null) {
+            Response.ResponseBuilder response = Response.status(Response.Status.UNAUTHORIZED).entity("Requires HTTP authentication!");
+            Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,"Client did not use HTTP Authentification ");
+            return response.header("Www-authenticate", "Basic realm=\"rest\"").build();
+        }
+
+        final String crepted = headers.getRequestHeader("authorization").get(0).substring("Basic ".length());
+
+        DecodeBasicAuthenticator basicAuthenticator = new DecodeBasicAuthenticator(crepted);
+
+        String username = basicAuthenticator.getUser();
+        String password = basicAuthenticator.getCode();
+        ClientFtp client = new ClientFtp("localhost", 21, username, password);
+
+        try {
+            if (!client.authenticate()) {
+                Response.ResponseBuilder response = Response.status(Response.Status.UNAUTHORIZED).entity("Wrong user name and password!");
+                Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,"Wrong user name and password!");
+                return response.header(" ", " ").build();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("X");
+        String result = "File doesn't upload";
+        if(client.stor("/"+pathFile+"/")){
+            result ="File uploaded";
+        }
+
+        client.close();
+
+        Response.ResponseBuilder response = Response.ok("Result: "+result, MediaType.TEXT_HTML).status(Response.Status.OK);
+        return response.build();
 
     }
-}
+
+    }

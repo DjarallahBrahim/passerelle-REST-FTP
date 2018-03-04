@@ -4,10 +4,7 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -207,9 +204,9 @@ public class FtpUtils {
         System.out.println(remoteFilePath+"     "+localFile.getPath());
         InputStream inputStream = new FileInputStream(localFile);
         try {
-              ftpClient.setBufferSize(4096);
             ftpClient.setFileTransferMode(FTP.COMPRESSED_TRANSFER_MODE);
             ftpClient.setFileType(FTPClient.BINARY_FILE_TYPE);
+            ftpClient.setBufferSize(4096);
             ftpClient.enterRemotePassiveMode();
             ftpClient.enterLocalPassiveMode();
             boolean resul=ftpClient.storeFile(remoteFilePath, inputStream);
@@ -219,5 +216,43 @@ public class FtpUtils {
             inputStream.close();
             return false;
         }
+    }
+
+    /**
+     * download a single file to the FTP server.
+     *
+     * @param ftpClient
+     *            an instance of org.apache.commons.net.ftp.FTPClient class.
+     * @param fileName
+     *            Path of the file on local computer
+     * @param remoteFilePath
+     *            Path of the file on remote the server
+     * @return true if the file was uploaded successfully, false otherwise
+     * @throws IOException
+     *             if any network or IO error occurred.
+     */
+    public File dowloadSingleFile(FTPClient ftpClient,
+                                    String fileName, String remoteFilePath) throws IOException {
+
+        System.out.println(remoteFilePath+"     "+fileName);
+        File downloadFile1 = new File(fileName);
+        boolean resul=false;
+        FileOutputStream fileDowloaded = new FileOutputStream(downloadFile1);
+        try {
+            ftpClient.setFileTransferMode(FTP.COMPRESSED_TRANSFER_MODE);
+            ftpClient.setFileType(FTPClient.BINARY_FILE_TYPE);
+            ftpClient.setBufferSize(4096);
+            ftpClient.enterRemotePassiveMode();
+            ftpClient.enterLocalPassiveMode();
+
+            resul=ftpClient.retrieveFile(remoteFilePath, fileDowloaded);
+
+            System.out.println(ftpClient.getReplyCode());
+
+        } catch (IOException e){
+            fileDowloaded.close();
+        }
+        return downloadFile1;
+
     }
 }

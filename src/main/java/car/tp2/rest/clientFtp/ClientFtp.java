@@ -2,12 +2,12 @@ package car.tp2.rest.clientFtp;
 
 
 
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
 import javax.print.DocFlavor;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -147,7 +147,7 @@ public class ClientFtp {
 
 
     /**
-     *
+     *  upload a file / Directory to the server
      * @param path
      * @return
      * @throws IOException
@@ -164,5 +164,29 @@ public class ClientFtp {
         else
             return this.ftpUtils.uploadSingleFile(this.client,localDir.getPath(),remoteFilePath+"/"+localDir.getName());
 
+    }
+
+    /**
+     * donwload file from server
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    public File retr(final String fileName)throws IOException{
+        File downloadedFile = null ;
+
+        this.client.enterLocalPassiveMode();
+        this.client.setFileType(FTP.BINARY_FILE_TYPE);
+        this.client.setBufferSize(4096);
+
+        final String remoteFilePath = this.client.printWorkingDirectory()+"/"+fileName;
+
+        if(this.ftpUtils.checkIsDirectory(this.client,remoteFilePath)){
+            //TODO download Directory !
+        }else {
+            downloadedFile = this.ftpUtils.dowloadSingleFile(this.client,fileName,remoteFilePath);
+        }
+
+        return downloadedFile;
     }
 }

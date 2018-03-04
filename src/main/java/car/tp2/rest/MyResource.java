@@ -213,6 +213,13 @@ public class MyResource {
         return response.build();
     }
 
+    /**
+     * Method handling HTTP GET requests for Uploading directory/FILE. The returned object will be sent
+     * to the client as "TEXT_PLAIN" of MediaType type
+     * @param pathFile
+     * @return
+     * @throws IOException
+     */
     @PUT
     @Path("stor/{param:.*}")
     @Produces(MediaType.TEXT_PLAIN)
@@ -255,4 +262,51 @@ public class MyResource {
 
     }
 
+    /**
+     * Method handling HTTP GET requests for Download FILE /directory. The returned object will be sent
+     * to the client as "TEXT_PLAIN" of MediaType type
+     * @param path
+     * @return
+     * @throws IOException
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Path("/file/{path: .*}")
+    public Response get(@PathParam("path") String path) throws IOException {
+        System.out.println("4");
+        if (headers.getRequestHeader("authorization") == null) {
+            Response.ResponseBuilder response = Response.status(Response.Status.UNAUTHORIZED).entity("Requires HTTP authentication!");
+            Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,"Client did not use HTTP Authentification ");
+            return response.header("Www-authenticate", "Basic realm=\"rest\"").build();
+        }
+
+        final String crepted = headers.getRequestHeader("authorization").get(0).substring("Basic ".length());
+
+        DecodeBasicAuthenticator basicAuthenticator = new DecodeBasicAuthenticator(crepted);
+
+        String username = basicAuthenticator.getUser();
+        String password = basicAuthenticator.getCode();
+        ClientFtp client = new ClientFtp("localhost", 21, username, password);
+
+        try {
+            if (!client.authenticate()) {
+                Response.ResponseBuilder response = Response.status(Response.Status.UNAUTHORIZED).entity("Wrong user name and password!");
+                Logger.getLogger(ClientFtp.class.getName()).log(Level.INFO,"Wrong user name and password!");
+                return response.header(" ", " ").build();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        File file = null;
+        file = client.retr(path);
+        if(file!=null){
+            Response.ResponseBuilder response = Response.ok((Object) file);
+            response.header("Content-Disposition", "attachement; filename = " + file.getName());
+            return response.build();
+        }else {
+            Response.ResponseBuilder response = Response.ok(path + " File did not dowloaded", MediaType.TEXT_HTML).status(Response.Status.OK);
+            return response.build();
+        }
+
+    }
     }

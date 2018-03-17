@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>PASSERELLE REST TP2 CAR</title>
+</head>
+
+<script type="text/javascript">
+
+    function setCookie(cname, cvalue)
+    {
+        var d = new Date();
+        d.setTime(d.getTime() + (today.getTime() + 30*24*60*60*1000));
+        var expires = "expires="+ d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
+
+    function putCookie(form)
+    {
+        setCookie("username", form[0].username.value);
+        setCookie("password", form[0].password.value);
+        return true;
+    }
+
+    function getCookie(cname) {
+        var name = cname + "=";
+        var decodedCookie = decodeURIComponent(document.cookie);
+        var ca = decodedCookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+
+    //alert(getCookie("username"));
+    //alert(getCookie("password"));
+</script>
+
+<body>
+
+    <form action="http://localhost:9988/myapp/myresource/login" method="post">
+        <p>
+            <label>Login</label> : <input type="text" name="username" />
+        </p>
+        <p>
+            <label>Password</label> : <input type="password" name="password"/>
+        </p>
+        <p><input type="submit" id="submit" value="Login"/></p>
+    </form>
+
+
+</body>
+</html>

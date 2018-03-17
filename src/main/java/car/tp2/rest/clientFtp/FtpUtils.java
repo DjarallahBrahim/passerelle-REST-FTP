@@ -5,11 +5,23 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class FtpUtils {
 
+    List<String> fileList;
+    List<String> dirList;
+
+    public FtpUtils(){
+        this.fileList = new ArrayList<String>();
+        this.dirList = new ArrayList<String>();
+
+    }
     /**
      * delete file
      * @param client
@@ -184,6 +196,9 @@ public class FtpUtils {
         }
       return result;
     }
+
+
+
     /**
      * Upload a single file to the FTP server.
      *
@@ -231,12 +246,16 @@ public class FtpUtils {
      * @throws IOException
      *             if any network or IO error occurred.
      */
-    public File dowloadSingleFile(FTPClient ftpClient,
+    public File dowloadSingleFile(final FTPClient ftpClient,
                                     String fileName, String remoteFilePath) throws IOException {
-
-        System.out.println(remoteFilePath+"     "+fileName);
+        //System.out.println(remoteFilePath+"     "+fileName);
+//        fileName = fileName.substring(0,fileName.length()-2);
+//        remoteFilePath = remoteFilePath.substring(0,remoteFilePath.length()-2);
+        if(fileName.contains("/")){
+            String [] splitName = fileName.split("/");
+            fileName = splitName[splitName.length-1];
+        }
         File downloadFile1 = new File(fileName);
-        boolean resul=false;
         FileOutputStream fileDowloaded = new FileOutputStream(downloadFile1);
         try {
             ftpClient.setFileTransferMode(FTP.COMPRESSED_TRANSFER_MODE);
@@ -245,8 +264,7 @@ public class FtpUtils {
             ftpClient.enterRemotePassiveMode();
             ftpClient.enterLocalPassiveMode();
 
-            resul=ftpClient.retrieveFile(remoteFilePath, fileDowloaded);
-
+            ftpClient.retrieveFile(remoteFilePath, fileDowloaded);
             System.out.println(ftpClient.getReplyCode());
 
         } catch (IOException e){
@@ -255,4 +273,116 @@ public class FtpUtils {
         return downloadFile1;
 
     }
+
+
+    /**
+     * creat ZIP file from List of filePath to download it
+     * @param client
+     * @param SOURCE_FOLDER
+     * @return
+     * @throws IOException
+     */
+    public File dowloadFill(FTPClient client ,String SOURCE_FOLDER,String zipName) throws IOException {
+        byte[] buffer = new byte[1024];
+
+        try{
+
+           // String zipFile = "testZip.zip";
+            File zipFile = new File(zipName+".zip");
+            FileOutputStream fos = new FileOutputStream(zipFile);
+            ZipOutputStream zos = new ZipOutputStream(fos);
+
+//            for(String dir : this.dirList){
+//                //ZIP file objects
+//                System.out.println("dir==> "+dir);
+//                ZipEntry ze= new ZipEntry(dir);
+//                zos.putNextEntry(ze);
+//
+//            }
+
+
+//
+            for(String file : this.fileList){
+
+                //ZIP file objects
+                ZipEntry ze= new ZipEntry(file);
+                zos.putNextEntry(ze);
+                //Full Path of disatns File to dowload
+                String pathFiledistant = SOURCE_FOLDER+File.separator + file;
+                FileInputStream in = new FileInputStream(dowloadSingleFile(client,file,pathFiledistant));
+                //Copy the file
+                int len;
+                while ((len = in.read(buffer)) > 0) {
+                    zos.write(buffer, 0, len);
+                }
+
+                in.close();
+                System.out.println("File Added : " + file);
+            }
+
+            zos.closeEntry();
+            zos.close();
+            fos.close();
+
+
+            System.out.println("Done");
+            return zipFile;
+        }catch(IOException ex){
+            ex.printStackTrace();
+            return null;
+        }
+
+    }
+
+
+    /**
+     * List a Directory with ist sub-Dir befor Download it
+     * @param ftpClient
+     * @param fixedPath
+     * @param parentDir
+     * @param currentDir
+     * @param level
+     * @throws IOException
+     */
+    public void listDirectory(FTPClient ftpClient, String fixedPath,String parentDir,
+                              String currentDir, int level) throws IOException {
+        String dirToList = parentDir;
+        if (!currentDir.equals("")) {
+            dirToList += "/" + currentDir;
+        }
+        if(!currentDir.equals(""))
+             fixedPath += "/"+currentDir;
+        FTPFile[] subFiles = ftpClient.listFiles(dirToList);
+        if (subFiles != null && subFiles.length > 0) {
+            for (FTPFile aFile : subFiles) {
+                String currentFileName = aFile.getName();
+                if (currentFileName.equals(".")
+                        || currentFileName.equals("..")) {
+                    // skip parent directory and directory itself
+                    continue;
+                }
+                for (int i = 0; i < level; i++) {
+                    //System.out.print("\t");
+                }
+                if (aFile.isDirectory()) {
+                    if(!fixedPath.equals("")){
+                        this.dirList.add(fixedPath+currentFileName+"/");
+                    }
+                    else {
+                        this.dirList.add(currentFileName+"/");
+                    }
+                    listDirectory(ftpClient,fixedPath, dirToList, currentFileName, level + 1);
+                } else {
+                    if(!fixedPath.equals("")){
+                        fileList.add(fixedPath+"/"+currentFileName);
+                    }
+                    else {
+                        fileList.add(currentFileName);
+                    }
+                }
+            }
+        }
+        fixedPath="";
+    }
+
 }

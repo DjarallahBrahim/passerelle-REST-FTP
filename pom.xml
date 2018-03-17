@@ -9,8 +9,6 @@
     <version>1.0-SNAPSHOT</version>
     <name>CAR-TP2</name>
 
-
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -47,6 +45,14 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>1.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/commons-net/commons-net -->
+        <dependency>
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
             <version>3.3</version>
@@ -58,18 +64,14 @@
             <version>1.5.0</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.jayway.restassured/rest-assured -->
         <dependency>
-            <groupId>org.glassfish.jersey.containers.glassfish</groupId>
-            <artifactId>jersey-gf-cdi</artifactId>
-            <version>2.14</version>
-            <scope>provided</scope>
+            <groupId>com.jayway.restassured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>2.9.0</version>
+            <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt</artifactId>
-            <version>0.7.0</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -80,8 +82,8 @@
                 <version>2.5.1</version>
                 <inherited>true</inherited>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -99,6 +101,55 @@
                     <mainClass>car.tp2.rest.Main</mainClass>
                 </configuration>
             </plugin>
+
+		<plugin>
+		    <artifactId>maven-assembly-plugin</artifactId>
+		    <executions>
+		        <execution>
+		            <phase>package</phase>
+		            <goals>
+		                <goal>single</goal>
+		            </goals>
+		        </execution>
+		    </executions>
+		    <configuration>
+		        <archive>
+		            <manifest>
+		                <mainClass>car.tp2.rest.Main</mainClass>
+		            </manifest>
+		        </archive>
+		        <descriptorRefs>
+		            <descriptorRef>jar-with-dependencies</descriptorRef>
+		        </descriptorRefs>
+		    </configuration>
+		</plugin>
+
+            <!-- main class for jar -->
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jar-plugin</artifactId>
+              <version>3.0.2</version>
+              <configuration>
+                <archive>
+                  <manifest>
+                    <mainClass>car.tp2.rest.Main</mainClass>
+                  </manifest>
+                </archive>
+              </configuration>
+            </plugin>
+
+            <!-- generate javadoc -->
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <version>2.10.4</version>
+              <configuration>
+                <reportOutputDirectory>${project.basedir}/docs</reportOutputDirectory>
+                <destDir>docs</destDir>
+                <nohelp>true</nohelp>
+              </configuration>
+            </plugin>
+
         </plugins>
     </build>
 

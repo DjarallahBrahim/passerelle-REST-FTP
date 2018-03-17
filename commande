@@ -1,0 +1,4 @@
+mvn archetype:generate -DarchetypeArtifactId=jersey-quickstart-grizzly2 \
+-DarchetypeGroupId=org.glassfish.jersey.archetypes -DinteractiveMode=false \
+-DgroupId=car.tp2.rest -DartifactId=CAR-TP2 -Dpackage=car.tp2.rest \
+-DarchetypeVersion=2.26

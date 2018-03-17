@@ -1,13 +1,13 @@
 package car.tp2.rest.clientFtp;
 
 
-
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
-import javax.print.DocFlavor;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -147,23 +147,27 @@ public class ClientFtp {
 
 
     /**
-     *  upload a file / Directory to the server
-     * @param path
+     *
+     * @param directoryName
      * @return
      * @throws IOException
      */
-    public boolean stor(final String path) throws IOException {
-        File localDir = new File(path);
-        String remoteFilePath = this.client.printWorkingDirectory();
-        if(localDir.isDirectory()) {
-            boolean create = this.client.makeDirectory(localDir.getName());
-            this.client.changeWorkingDirectory(this.client.printWorkingDirectory()+"/"+localDir.getName());
-            remoteFilePath = this.client.printWorkingDirectory();
-            return this.ftpUtils.uploadDirectory(this.client, remoteFilePath, localDir.getPath(), "");
-        }
-        else
-            return this.ftpUtils.uploadSingleFile(this.client,localDir.getPath(),remoteFilePath+"/"+localDir.getName());
+    public boolean stor(final String directoryName, InputStream received) throws IOException {
 
+        String remoteFilePath = this.client.printWorkingDirectory() + "/" + directoryName;
+
+        this.client.setBufferSize(4096);
+        this.client.setFileType(FTP.BINARY_FILE_TYPE);
+        this.client.setFileTransferMode(FTP.COMPRESSED_TRANSFER_MODE);
+        boolean storeFileResult = this.client.storeFile(remoteFilePath, received);
+
+        if (!storeFileResult) {
+            Logger.getLogger(ClientFtp.class.getName()).log(Level.WARNING, this.client.getReplyString());
+            throw new IOException(this.client.getReplyString());
+        }
+        received.close();
+
+        return  storeFileResult;
     }
 
     /**
@@ -182,11 +186,14 @@ public class ClientFtp {
         final String remoteFilePath = this.client.printWorkingDirectory()+"/"+fileName;
 
         if(this.ftpUtils.checkIsDirectory(this.client,remoteFilePath)){
-            //TODO download Directory !
+            this.ftpUtils.listDirectory(this.client,"",remoteFilePath,"",0);
+            return this.ftpUtils.dowloadFill(this.client,remoteFilePath,fileName);
         }else {
             downloadedFile = this.ftpUtils.dowloadSingleFile(this.client,fileName,remoteFilePath);
         }
 
         return downloadedFile;
     }
+
+
 }
